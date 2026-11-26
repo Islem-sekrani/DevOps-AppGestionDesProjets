@@ -52,5 +52,35 @@ pipeline {
                 sh 'docker build -t "atelier4-frontend:jenkins-$BUILD_NUMBER" ./frontend'
             }
         }
+
+        stage('Docker - publier les images') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-atelier4',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        DOCKER_CONFIG="$(mktemp -d)"
+                        export DOCKER_CONFIG
+                        trap 'rm -f "$DOCKER_CONFIG/config.json"; rmdir "$DOCKER_CONFIG" || true' EXIT
+
+                        printf '%s' "$DOCKERHUB_TOKEN" |
+                            docker login --username "$DOCKERHUB_USER" --password-stdin
+
+                        repo="islemsekrani/atelier4-app"
+                        backend_image="$repo:backend-jenkins-$BUILD_NUMBER"
+                        frontend_image="$repo:frontend-jenkins-$BUILD_NUMBER"
+
+                        docker tag "atelier4-backend:jenkins-$BUILD_NUMBER" "$backend_image"
+                        docker tag "atelier4-frontend:jenkins-$BUILD_NUMBER" "$frontend_image"
+
+                        docker push "$backend_image"
+                        docker push "$frontend_image"
+                    '''
+                }
+            }
+        }
     }
 }
