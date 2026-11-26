@@ -45,5 +45,12 @@ pipeline {
                 archiveArtifacts artifacts: 'frontend/dist/frontend/**/*', fingerprint: true
             }
         }
+
+        stage('Docker - construire les images') {
+            steps {
+                sh 'docker build -t "atelier4-backend:jenkins-$BUILD_NUMBER" ./backend'
+                sh 'docker build -t "atelier4-frontend:jenkins-$BUILD_NUMBER" ./frontend'
+            }
+        }
     }
 }
